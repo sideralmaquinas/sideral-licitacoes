@@ -171,6 +171,27 @@ def cmd_painel(args):
         webbrowser.open(caminho.resolve().as_uri())
 
 
+def cmd_exportar(args):
+    """Exporta os editais de laser em JSON (usado para calibrar o dicionário)."""
+    con = banco.conectar()
+    itens = {}
+    for r in con.execute("SELECT edital_id, descricao FROM itens ORDER BY edital_id, numero"):
+        itens.setdefault(r["edital_id"], []).append(r["descricao"])
+    linhas = []
+    for r in con.execute("SELECT * FROM editais WHERE score >= ? ORDER BY publicacao DESC", (args.min_score,)):
+        d = {k: r[k] for k in ("id", "publicacao", "encerramento", "uf", "municipio", "orgao", "modalidade",
+                               "valor", "objeto", "info", "score", "maquina", "link_pncp")}
+        d["categorias"] = json.loads(r["categorias"] or "[]")
+        d["termos"] = json.loads(r["termos"] or "[]")
+        d["itens"] = itens.get(r["id"], [])[:40]
+        linhas.append(d)
+    destino = Path(args.saida)
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    destino.write_text(json.dumps({"total_lidos": banco.total_lidos(con), "editais": linhas},
+                                  ensure_ascii=False, indent=1), encoding="utf-8")
+    print(f"{len(linhas)} editais exportados para {destino}")
+
+
 def cmd_podar(args):
     n = banco.podar(banco.conectar(), args.dias)
     print(f"{n} editais sem perfil de laser com mais de {args.dias} dias foram apagados.")
@@ -216,6 +237,11 @@ def main(argv=None):
     sp.add_argument("--nao-abrir", action="store_true")
     sp.add_argument("--saida", help="caminho do HTML (padrão: painel.html)")
     sp.set_defaults(f=cmd_painel)
+
+    sp = sub.add_parser("exportar", help="exporta os editais de laser em JSON")
+    sp.add_argument("--saida", default="editais_laser.json")
+    sp.add_argument("--min-score", type=int, default=2)
+    sp.set_defaults(f=cmd_exportar)
 
     sp = sub.add_parser("podar", help="apaga editais antigos que não são de laser")
     sp.add_argument("--dias", type=int, default=45)

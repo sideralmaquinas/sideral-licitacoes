@@ -172,6 +172,11 @@ PENALIDADES = {
     r"locacao de (veiculos?|maquinas pesadas|imovel)": 2,
     r"servicos? (continuados?|de limpeza|de vigilancia|de manutencao predial)": 1,
     r"generos alimenticios|merenda|alimentacao escolar": 2,
+    r"(materiais|material) de construcao": 2,
+    r"servicos? (de |especializados? (de|em) )?engenharia": 2,
+    r"caminhao|munk|guindaste|retroescavadeira": 2,
+    r"concessao (de uso|onerosa)|permissao de uso": 3,
+    r"vigilancia (armada|desarmada|patrimonial|eletronica)|seguranca patrimonial": 2,
 }
 
 # Pontuação mínima para o edital aparecer no painel por padrão.

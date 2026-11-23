@@ -13,7 +13,7 @@ on:
         default: ""
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -73,6 +73,20 @@ jobs:
 
       - name: Gerar painel
         run: python coletar.py painel --nao-abrir --saida site/index.html
+
+      # Guarda os editais de laser (texto completo) no ramo "dados", para calibrar o filtro.
+      - name: Publicar dados para análise
+        env:
+          TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          python coletar.py exportar --saida /tmp/dados/editais_laser.json
+          python coletar.py resumo > /tmp/dados/resumo.txt
+          cd /tmp/dados
+          git init -q -b dados
+          git add .
+          git -c user.name="coleta-sideral" -c user.email="coleta@users.noreply.github.com" commit -qm "dados $(date -u +%F)"
+          git push -f -q "https://x-access-token:${TOKEN}@github.com/${REPO}" dados
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
