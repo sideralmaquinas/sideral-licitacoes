@@ -217,7 +217,7 @@ function render(){
   <div class="meta">${esc(e.org)}${e.un&&e.un!==e.org?' · '+esc(e.un):''} · ${esc(e.mun)}/${esc(e.uf)} · ${esc(e.mod)}${e.srp?' · Registro de preços':''}</div>
   </div><div class="val"><b>${e.v?brl(e.v):'sem valor'}</b>${prazo(e)}<div class="meta">abre ${fdt(e.ab)}</div></div></div>
   <div class="chips">${e.c.slice(0,3).map(c=>`<span class="chip c">${esc(CAT[c]||c)}</span>`).join('')}${e.m?`<span class="chip m">${esc(e.m==='Máquina'?'Venda de máquina':'Laser '+e.m)}</span>`:''}<span class="chip s">nota ${e.s}</span>${e.t.slice(0,5).map(t=>`<span class="chip">${esc(t)}</span>`).join('')}</div>
-  ${e.it.length?`<details><summary>${e.it.length} itens</summary><table><tr><th>Descrição</th><th class="r">Qtd</th><th class="r">Unit. estimado</th></tr>${e.it.map(i=>`<tr><td>${esc(i[0])}</td><td class="r">${i[1]??''} ${esc(i[2]||'')}</td><td class="r">${i[3]!=null?brl(i[3]):''}</td></tr>`).join('')}</table></details>`:''}
+  ${e.it.length?`<details><summary>${e.it.length} ${e.it.length>1?'itens':'item'} do edital</summary><table><tr><th>Descrição</th><th class="r">Qtd</th><th class="r">Unit. estimado</th></tr>${e.it.map(i=>`<tr><td>${esc(i[0])}</td><td class="r">${i[1]??''} ${esc(i[2]||'')}</td><td class="r">${i[3]!=null?brl(i[3]):''}</td></tr>`).join('')}</table></details>`:''}
   <div class="acts">${e.lp?`<a href="${esc(e.lp)}" target="_blank" rel="noopener">Ver edital no PNCP ↗</a>`:''}${e.lo?`<a href="${esc(e.lo)}" target="_blank" rel="noopener">Sistema de origem ↗</a>`:''}</div>
  </div>`).join('')||'<div class="vazio">Nenhum edital com esses filtros.</div>';
  $('mais').style.display=F.length>lim?'block':'none';
