@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from datetime import datetime
 from pathlib import Path
 
@@ -46,6 +47,9 @@ def gerar(min_score: int = 2, con=None, destino: Path = ARQUIVO) -> Path:
     dados = json.dumps(_dados(con, min_score), ensure_ascii=False).replace("</", "<\\/")
     html = MODELO.replace("__DADOS__", dados)
     destino.write_text(html, encoding="utf-8")
+    logo = Path(__file__).with_name("assets") / "logo.png"
+    if logo.exists() and destino.parent.resolve() != logo.parent.resolve():
+        shutil.copy(logo, destino.parent / "logo.png")
     return destino
 
 
@@ -54,74 +58,99 @@ MODELO = r"""<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sideral Licitações - editais para máquina laser</title>
+<title>Sideral Licitações · editais para quem tem máquina laser</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0f1218;--card:#171b23;--line:#262c37;--tx:#e8eaed;--mut:#8b93a1;--ac:#ff6a1a;--ac2:#ffb38a;--ok:#3ecf8e;--warn:#f5b942;--bad:#ef5b5b}
+/* Identidade Sideral: cinza claro #EAE9E8, cinza escuro #9D9D9C, amarelo #FFBB27, preto e branco.
+   Montserrat ExtraBold (títulos), Montserrat SemiBold (subtítulos), Roboto (texto). */
+:root{--bg:#EAE9E8;--card:#fff;--line:#d9d7d5;--tx:#000;--mut:#5f5f5e;--cinza:#9D9D9C;--ac:#FFBB27;--ac2:#000;--ok:#1f7a4d;--warn:#b26b00;--bad:#c8321f;
+ --tit:"Montserrat",system-ui,sans-serif;--txt:"Roboto",system-ui,-apple-system,"Segoe UI",sans-serif}
 *{box-sizing:border-box}
-body{margin:0;font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx)}
-header{padding:22px 28px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
-h1{margin:0;font-size:20px;letter-spacing:.2px}
-h1 span{color:var(--ac)}
-.sub{color:var(--mut);font-size:12.5px;margin-top:3px}
-main{display:grid;grid-template-columns:270px 1fr;gap:0;min-height:calc(100vh - 70px)}
-aside{border-right:1px solid var(--line);padding:18px 20px;position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto}
-aside label{display:block;color:var(--mut);font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;margin:14px 0 5px}
-input,select{width:100%;background:var(--card);border:1px solid var(--line);color:var(--tx);border-radius:7px;padding:8px 9px;font:inherit}
-input[type=range]{accent-color:var(--ac);padding:0}
-input:focus,select:focus{outline:1px solid var(--ac);border-color:var(--ac)}
+body{margin:0;font:400 14px/1.5 var(--txt);background:var(--bg);color:var(--tx)}
+header{background:#000;color:#fff;padding:18px 28px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;position:relative;overflow:hidden;border-bottom:6px solid var(--ac)}
+header::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(-55deg,transparent 0 22px,rgba(255,255,255,.035) 22px 24px);pointer-events:none}
+.marca{display:flex;align-items:center;gap:18px;position:relative}
+.marca img{height:46px;width:auto;display:block}
+.marca .wm{display:none;font:800 22px/1 var(--tit);letter-spacing:1px}
+.marca .wm small{display:block;font:600 9.5px/1.4 var(--tit);letter-spacing:2.2px;color:var(--cinza);margin-top:3px}
+.divi{width:2px;align-self:stretch;background:#333}
+h1{margin:0;font:800 22px/1.1 var(--tit);color:var(--ac);text-transform:uppercase;letter-spacing:.5px}
+.sub{color:#bdbdbc;font:300 12.5px/1.45 var(--txt);margin-top:4px;max-width:720px}
+main{display:grid;grid-template-columns:280px 1fr;min-height:calc(100vh - 90px)}
+aside{padding:20px 22px;position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto;border-right:1px solid var(--line)}
+aside label{display:block;color:var(--mut);font:600 11px/1 var(--tit);text-transform:uppercase;letter-spacing:.9px;margin:16px 0 6px}
+input,select{width:100%;background:#fff;border:1.5px solid var(--line);color:var(--tx);border-radius:6px;padding:9px 10px;font:400 14px var(--txt)}
+input[type=range]{accent-color:#000;padding:0;border:0;background:transparent}
+input:focus,select:focus{outline:none;border-color:#000;box-shadow:0 0 0 3px rgba(255,187,39,.45)}
 .row{display:flex;gap:8px}
-button{background:var(--card);color:var(--tx);border:1px solid var(--line);border-radius:7px;padding:8px 12px;font:inherit;cursor:pointer}
-button:hover{border-color:var(--ac)}
-button.pri{background:var(--ac);border-color:var(--ac);color:#140800;font-weight:600}
-section{padding:18px 26px}
-.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
-.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
-.kpi b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
-.kpi small{color:var(--mut)}
+button{background:#fff;color:#000;border:1.5px solid #000;border-radius:6px;padding:9px 14px;font:600 13px var(--tit);cursor:pointer;letter-spacing:.2px}
+button:hover{background:#000;color:#fff}
+header button{background:var(--ac);border-color:var(--ac);color:#000;position:relative;text-transform:uppercase;font-weight:800;letter-spacing:.6px}
+header button:hover{background:#fff;border-color:#fff;color:#000}
+section{padding:20px 26px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.kpi{background:#fff;border-radius:8px;padding:14px 16px;border-top:4px solid #000}
+.kpi:first-child{background:#000;color:#fff;border-top-color:var(--ac)}
+.kpi:first-child b{color:var(--ac)}
+.kpi:first-child small{color:#bdbdbc}
+.kpi b{display:block;font:800 24px/1.15 var(--tit);font-variant-numeric:tabular-nums}
+.kpi small{color:var(--mut);font-size:12.5px}
 .bars{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
-.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
-.box h3{margin:0 0 8px;font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
-.bar{display:grid;grid-template-columns:minmax(0,1fr) 120px 34px;gap:8px;align-items:center;font-size:12.5px;padding:2px 0;cursor:pointer}
-.bar:hover .nm{color:var(--ac2)}
+.box{background:#fff;border-radius:8px;padding:14px 16px}
+.box h3{margin:0 0 10px;font:800 12px/1 var(--tit);text-transform:uppercase;letter-spacing:1px}
+.bar{display:grid;grid-template-columns:minmax(0,1fr) 130px 34px;gap:10px;align-items:center;font-size:13px;padding:3px 0;cursor:pointer}
+.bar:hover .nm{text-decoration:underline;text-decoration-color:var(--ac);text-decoration-thickness:3px}
 .bar .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bar .tr{height:7px;background:#232833;border-radius:4px;overflow:hidden}
-.bar .tr i{display:block;height:100%;background:var(--ac);border-radius:4px}
-.bar .n{text-align:right;color:var(--mut);font-variant-numeric:tabular-nums}
-.ed{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:10px}
-.ed:hover{border-color:#353d4b}
-.top{display:flex;justify-content:space-between;gap:14px}
-.obj{font-weight:600;font-size:14.5px}
-.meta{color:var(--mut);font-size:12.5px;margin-top:4px}
+.bar .tr{height:9px;background:#efeeed;border-radius:2px;overflow:hidden}
+.bar .tr i{display:block;height:100%;background:var(--ac)}
+.bar .n{text-align:right;font:600 12.5px var(--tit);font-variant-numeric:tabular-nums}
+.ed{background:#fff;border-radius:8px;padding:16px 18px;margin-bottom:10px;border-left:5px solid var(--ac);transition:box-shadow .15s}
+.ed:hover{box-shadow:0 4px 18px rgba(0,0,0,.08)}
+.top{display:flex;justify-content:space-between;gap:16px}
+.obj{font:600 15px/1.35 var(--tit)}
+.meta{color:var(--mut);font-size:12.5px;margin-top:5px}
 .val{text-align:right;white-space:nowrap}
-.val b{font-size:16px;font-variant-numeric:tabular-nums}
-.prazo{font-size:12px;margin-top:3px}
-.chips{margin-top:8px;display:flex;flex-wrap:wrap;gap:5px}
-.chip{font-size:11.5px;border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--mut)}
-.chip.c{border-color:#5a3a26;color:var(--ac2)}
-.chip.m{border-color:#2a4b3f;color:var(--ok)}
-.chip.s{border-color:#4a4426;color:var(--warn)}
-.acts{margin-top:9px;display:flex;gap:14px;font-size:12.5px}
-a{color:var(--ac2);text-decoration:none}a:hover{text-decoration:underline}
-details{margin-top:8px}summary{cursor:pointer;color:var(--mut);font-size:12.5px}
+.val b{font:800 17px var(--tit);font-variant-numeric:tabular-nums}
+.prazo{font:600 12px var(--tit);margin-top:4px}
+.chips{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:11.5px;border-radius:4px;padding:3px 8px;background:#f1f0ef;color:#3d3d3c}
+.chip.c{background:var(--ac);color:#000;font:600 11.5px var(--tit)}
+.chip.m{background:#000;color:#fff;font:600 11.5px var(--tit)}
+.chip.s{background:#fff;color:#000;border:1.5px solid #000;font:600 11.5px var(--tit)}
+.acts{margin-top:11px;display:flex;gap:18px;font:600 12.5px var(--tit)}
+a{color:#000;text-decoration:underline;text-decoration-color:var(--ac);text-decoration-thickness:3px;text-underline-offset:3px}
+a:hover{background:var(--ac)}
+details{margin-top:10px}summary{cursor:pointer;color:var(--mut);font:600 12.5px var(--tit)}
 table{width:100%;border-collapse:collapse;margin-top:6px;font-size:12.5px}
-td,th{border-top:1px solid var(--line);padding:5px 6px;text-align:left;vertical-align:top}
-th{color:var(--mut);font-weight:500}
+td,th{border-top:1px solid var(--line);padding:6px;text-align:left;vertical-align:top}
+th{color:var(--mut);font:600 11px var(--tit);text-transform:uppercase;letter-spacing:.6px}
 td.r,th.r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-.vazio{color:var(--mut);padding:40px;text-align:center}
-.mais{display:block;margin:14px auto}
+.vazio{color:var(--mut);padding:40px;text-align:center;background:#fff;border-radius:8px}
+.mais{display:block;margin:16px auto}
+footer{background:#000;color:#bdbdbc;padding:18px 28px;font:300 12.5px var(--txt);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+footer b{color:#fff;font:800 13px var(--tit);letter-spacing:.3px}
+footer b span{color:var(--ac)}
 #tf{display:none}
-@media(max-width:900px){main{grid-template-columns:1fr}aside{position:static;max-height:none;border-right:0;border-bottom:1px solid var(--line);padding:6px 16px 14px}.kpis{grid-template-columns:1fr 1fr;gap:8px}.kpi b{font-size:18px}.bars{grid-template-columns:1fr}
- #tf{display:block;width:100%;margin-top:12px}#extra{display:none}aside.aberto #extra{display:block}
- header{padding:16px 16px 12px}section{padding:14px 12px}.ed{padding:12px 13px}
+@media(max-width:900px){main{grid-template-columns:1fr}aside{position:static;max-height:none;border-right:0;border-bottom:1px solid var(--line);padding:6px 16px 16px}.kpis{grid-template-columns:1fr 1fr;gap:8px}.kpi b{font-size:19px}.bars{grid-template-columns:1fr}
+ #tf{display:block;width:100%;margin-top:14px}#extra{display:none}aside.aberto #extra{display:block}
+ header{padding:14px 16px}.marca img{height:36px}h1{font-size:18px}.divi{display:none}.marca{gap:12px;flex-wrap:wrap}
+ section{padding:14px 12px}.ed{padding:13px 14px}
  .top{flex-direction:column;gap:6px}.val{text-align:left;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.val .prazo,.val .meta{margin:0}
  .bar{grid-template-columns:minmax(0,1fr) 90px 28px}}
 </style>
 </head>
 <body>
 <header>
-  <div>
-    <h1>Sideral <span>Licitações</span></h1>
-    <div class="sub" id="sub"></div>
+  <div class="marca">
+    <img src="logo.png" alt="Sideral Máquinas" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+    <div class="wm">SIDERAL<small>MÁQUINA DE FAZER DINHEIRO</small></div>
+    <span class="divi"></span>
+    <div>
+      <h1>Licitações</h1>
+      <div class="sub" id="sub"></div>
+    </div>
   </div>
   <div class="row" style="width:auto">
     <button onclick="exportar()">Exportar CSV</button>
@@ -167,6 +196,7 @@ td.r,th.r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
   <button class="mais" id="mais" onclick="lim+=100;render()">Mostrar mais</button>
 </section>
 </main>
+<footer><b>SIDERAL <span>MÁQUINAS</span></b><span>Qualquer um vende máquina. Nós entregamos negócio.</span><span>Dados públicos do PNCP · confira sempre o edital oficial</span></footer>
 <script type="application/json" id="dados">__DADOS__</script>
 <script>
 const D=JSON.parse(document.getElementById('dados').textContent);
@@ -176,7 +206,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const dt=s=>s?new Date(s):null;
 const fdt=s=>{const d=dt(s);return d&&!isNaN(d)?d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'—'};
 let lim=100, filtrados=[];
-$('sub').textContent=`${E.length} editais com perfil de laser · ${D.total_lidos.toLocaleString('pt-BR')} lidos no PNCP · publicados de ${D.periodo[0]||'—'} a ${D.periodo[1]||'—'} · atualizado ${D.gerado}`;
+const fd=d=>d?d.split('-').reverse().join('/'):'—';$('sub').textContent=`Editais para quem tem máquina laser · ${D.total_lidos.toLocaleString('pt-BR')} editais analisados de ${fd(D.periodo[0])} a ${fd(D.periodo[1])} · atualizado ${D.gerado}`;
 Object.entries(CAT).forEach(([k,v])=>$('cat').insertAdjacentHTML('beforeend',`<option value="${k}">${esc(v)}</option>`));
 [...new Set(E.map(e=>e.uf).filter(Boolean))].sort().forEach(u=>$('uf').insertAdjacentHTML('beforeend',`<option>${u}</option>`));
 [...new Set(E.map(e=>e.mod).filter(Boolean))].sort().forEach(m=>$('mod').insertAdjacentHTML('beforeend',`<option>${esc(m)}</option>`));
@@ -216,7 +246,7 @@ function render(){
   <div class="obj">${esc(e.o)}</div>
   <div class="meta">${esc(e.org)}${e.un&&e.un!==e.org?' · '+esc(e.un):''} · ${esc(e.mun)}/${esc(e.uf)} · ${esc(e.mod)}${e.srp?' · Registro de preços':''}</div>
   </div><div class="val"><b>${e.v?brl(e.v):'sem valor'}</b>${prazo(e)}<div class="meta">abre ${fdt(e.ab)}</div></div></div>
-  <div class="chips">${e.c.slice(0,3).map(c=>`<span class="chip c">${esc(CAT[c]||c)}</span>`).join('')}${e.m?`<span class="chip m">${esc(e.m==='Máquina'?'Venda de máquina':'Laser '+e.m)}</span>`:''}<span class="chip s">nota ${e.s}</span>${e.t.slice(0,5).map(t=>`<span class="chip">${esc(t)}</span>`).join('')}</div>
+  <div class="chips">${e.c.slice(0,3).map(c=>`<span class="chip c">${esc(CAT[c]||c)}</span>`).join('')}${e.m?`<span class="chip m">${esc(e.m==='Máquina'?'Oportunidade: venda de máquina':'Laser '+e.m)}</span>`:''}<span class="chip s">nota ${e.s}</span>${e.t.slice(0,5).map(t=>`<span class="chip">${esc(t)}</span>`).join('')}</div>
   ${e.it.length?`<details><summary>${e.it.length} ${e.it.length>1?'itens':'item'} do edital</summary><table><tr><th>Descrição</th><th class="r">Qtd</th><th class="r">Unit. estimado</th></tr>${e.it.map(i=>`<tr><td>${esc(i[0])}</td><td class="r">${i[1]??''} ${esc(i[2]||'')}</td><td class="r">${i[3]!=null?brl(i[3]):''}</td></tr>`).join('')}</table></details>`:''}
   <div class="acts">${e.lp?`<a href="${esc(e.lp)}" target="_blank" rel="noopener">Ver edital no PNCP ↗</a>`:''}${e.lo?`<a href="${esc(e.lo)}" target="_blank" rel="noopener">Sistema de origem ↗</a>`:''}</div>
  </div>`).join('')||'<div class="vazio">Nenhum edital com esses filtros.</div>';
