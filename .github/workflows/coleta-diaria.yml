@@ -1,0 +1,82 @@
+name: Coleta diária de editais
+
+on:
+  schedule:
+    - cron: "13 9 * * *"   # todo dia às 06:13 (horário de Brasília)
+  workflow_dispatch:        # botão "Run workflow" para rodar na hora
+    inputs:
+      dias:
+        description: "Quantos dias para trás buscar"
+        default: "2"
+      uf:
+        description: "Estados separados por espaço (vazio = Brasil inteiro)"
+        default: ""
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: coleta
+  cancel-in-progress: false
+
+jobs:
+  coletar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 345
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      # O banco (licitacoes.db) fica guardado no cache do GitHub entre uma execução e outra.
+      - name: Recuperar banco
+        uses: actions/cache/restore@v4
+        with:
+          path: licitacoes.db
+          key: banco-${{ github.run_id }}
+          restore-keys: banco-
+
+      - name: Coletar editais publicados
+        env:
+          DIAS: ${{ github.event.inputs.dias || '2' }}
+          UFS: ${{ github.event.inputs.uf || '' }}
+        run: |
+          ARGS="--dias $DIAS"
+          if [ -n "$UFS" ]; then ARGS="$ARGS --uf $UFS"; fi
+          # Para em 5h para sobrar tempo de salvar e publicar; o que faltar é continuado na próxima execução.
+          timeout 300m python coletar.py publicadas $ARGS || echo "Coleta interrompida pelo limite de tempo; continua na próxima execução."
+
+      - name: Baixar itens dos melhores editais
+        run: timeout 20m python coletar.py itens --limite 150 || true
+
+      - name: Limpar editais antigos sem perfil de laser
+        run: python coletar.py podar --dias 45
+
+      - name: Resumo
+        run: python coletar.py resumo | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Salvar banco
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: licitacoes.db
+          key: banco-${{ github.run_id }}
+
+      - name: Gerar painel
+        run: python coletar.py painel --nao-abrir --saida site/index.html
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4
